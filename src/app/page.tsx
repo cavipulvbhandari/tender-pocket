@@ -4724,7 +4724,7 @@ export default function Dashboard() {
                     <BookOpen size={18} style={{ color: 'var(--primary)' }} />
                     Document Repository & Bid Generator
                   </h3>
-                  {currentUser?.role === 'MIS Executive' && (
+                  {(currentUser?.role === 'MIS Executive' || currentUser?.role === 'Tender Executive') && (
                     <button 
                       className="btn btn-primary" 
                       style={{ padding: '6px 14px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
@@ -5042,7 +5042,7 @@ export default function Dashboard() {
                           value={workingPath}
                           onChange={(e) => setWorkingPath(e.target.value)}
                           placeholder={selectedTender.payment_status === 'Approved' ? "e.g. /Shared/Tenders/2026/GEM-7324078" : "Awaiting EMD Payment Approval"}
-                          disabled={currentUser?.role !== 'MIS Executive' || selectedTender.payment_status !== 'Approved'}
+                          disabled={(currentUser?.role !== 'MIS Executive' && currentUser?.role !== 'Tender Executive') || selectedTender.payment_status !== 'Approved'}
                           style={{ 
                             flexGrow: 1, 
                             padding: '8px 12px', 
@@ -5051,10 +5051,10 @@ export default function Dashboard() {
                             border: '1px solid var(--border-color)', 
                             color: 'var(--text-primary)', 
                             fontSize: '13px',
-                            opacity: (currentUser?.role !== 'MIS Executive' || selectedTender.payment_status !== 'Approved') ? 0.6 : 1
+                            opacity: ((currentUser?.role !== 'MIS Executive' && currentUser?.role !== 'Tender Executive') || selectedTender.payment_status !== 'Approved') ? 0.6 : 1
                           }}
                         />
-                        {currentUser?.role === 'MIS Executive' && selectedTender.payment_status === 'Approved' && (
+                        {(currentUser?.role === 'MIS Executive' || currentUser?.role === 'Tender Executive') && selectedTender.payment_status === 'Approved' && (
                           <button 
                             className="btn btn-secondary" 
                             style={{ padding: '8px 12px', fontSize: '12px' }}
@@ -5103,7 +5103,7 @@ export default function Dashboard() {
                       <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0 }}>
                         No bid documents have been generated yet. Use the document builder to start.
                       </p>
-                      {currentUser?.role === 'MIS Executive' && (
+                      {(currentUser?.role === 'MIS Executive' || currentUser?.role === 'Tender Executive') && (
                         <button 
                           className="btn btn-primary" 
                           style={{ width: '100%', justifyContent: 'center', marginTop: '6px' }}
@@ -5210,7 +5210,7 @@ export default function Dashboard() {
                         >
                           Save Details
                         </button>
-                        {currentUser?.role === 'MIS Executive' && (
+                        {(currentUser?.role === 'MIS Executive' || currentUser?.role === 'Tender Executive') && (
                           <button 
                             className="btn btn-primary" 
                             style={{ flex: 1, padding: '6px 12px', fontSize: '12px', justifyContent: 'center' }}
@@ -5313,7 +5313,7 @@ export default function Dashboard() {
                       Upload final files to folder and request thorough verification review of bid templates, checklists, and signatures.
                     </p>
 
-                    {currentUser?.role === 'MIS Executive' && selectedTender.verification_status !== 'Approved' && (
+                    {(currentUser?.role === 'MIS Executive' || currentUser?.role === 'Tender Executive') && selectedTender.verification_status !== 'Approved' && (
                       <button 
                         className="btn btn-primary" 
                         style={{ width: '100%', padding: '6px 12px', fontSize: '12px', justifyContent: 'center', marginBottom: '12px' }}
@@ -5407,7 +5407,7 @@ export default function Dashboard() {
                       After physically/electronically filing the bid on the portal, request submission audit. Only the selected MIS Team member can verify and mark as Submitted.
                     </p>
 
-                    {currentUser?.role === 'MIS Executive' && selectedTender.status !== 'Submitted' && selectedTender.status !== 'Filed' && selectedTender.submission_status !== 'Pending' && (
+                    {(currentUser?.role === 'MIS Executive' || currentUser?.role === 'Tender Executive') && selectedTender.status !== 'Submitted' && selectedTender.status !== 'Filed' && selectedTender.submission_status !== 'Pending' && (
                       <button 
                         className="btn btn-primary" 
                         style={{ width: '100%', padding: '6px 12px', fontSize: '12px', justifyContent: 'center' }}
