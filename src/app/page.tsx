@@ -229,7 +229,9 @@ export default function Dashboard() {
   // Workflow, Comments and Stats States
   const [execStats, setExecStats] = useState<any[]>([]);
   const [comments, setComments] = useState<any[]>([]);
-  const [commentText, setCommentText] = useState('');
+  const [emdCommentText, setEmdCommentText] = useState('');
+  const [verificationCommentText, setVerificationCommentText] = useState('');
+  const [submissionCommentText, setSubmissionCommentText] = useState('');
   const [selectedMisMember, setSelectedMisMember] = useState('');
   const [misTeamMembers, setMisTeamMembers] = useState<string[]>([]);
   const [corrigendumFilter, setCorrigendumFilter] = useState(false);
@@ -1038,18 +1040,20 @@ export default function Dashboard() {
     }
   };
 
-  const postComment = async (phase: string) => {
-    if (!commentText.trim() || !selectedTender) return;
+  const postComment = async (phase: string, text: string) => {
+    if (!text.trim() || !selectedTender) return;
     try {
       const response = await fetchWithAuth(`/api/tenders/${selectedTender.id}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ comment: commentText, phase })
+        body: JSON.stringify({ comment: text, phase })
       });
       const data = await response.json();
       if (data.success) {
         showToast('Comment posted successfully!', 'success');
-        setCommentText('');
+        if (phase === 'Payment') setEmdCommentText('');
+        else if (phase === 'Verification') setVerificationCommentText('');
+        else if (phase === 'Submission') setSubmissionCommentText('');
         fetchComments(selectedTender.id);
       } else {
         showToast(data.error || 'Failed to post comment.', 'error');
@@ -5259,6 +5263,27 @@ export default function Dashboard() {
                       </div>
                     </div>
 
+                    {/* Target MIS Team Representative Selector */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '12px' }}>
+                      <label style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase' }}>
+                        Target MIS Team Representative
+                      </label>
+                      <select 
+                        value={selectedMisMember}
+                        onChange={(e) => {
+                          setSelectedMisMember(e.target.value);
+                          updateTenderField({ assigned_mis_member: e.target.value });
+                        }}
+                        disabled={currentUser?.role === 'Admin'}
+                        style={{ padding: '8px 12px', borderRadius: '6px', background: 'var(--bg-app)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '13px', outline: 'none' }}
+                      >
+                        <option value="">-- Select Target MIS Representative --</option>
+                        {misTeamMembers.map(m => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                      </select>
+                    </div>
+
                     {/* Action buttons */}
                     {currentUser?.role !== 'Admin' && selectedTender.payment_status !== 'Approved' && (
                       <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
@@ -5269,7 +5294,8 @@ export default function Dashboard() {
                             emd_payment_mode: emdPaymentMode,
                             emd_amount_actual: emdAmountActual === '' ? null : Number(emdAmountActual),
                             emd_payment_ref: emdPaymentRef,
-                            emd_payment_date: emdPaymentDate
+                            emd_payment_date: emdPaymentDate,
+                            assigned_mis_member: selectedMisMember
                           })}
                         >
                           Save Details
@@ -5283,6 +5309,7 @@ export default function Dashboard() {
                               emd_amount_actual: emdAmountActual === '' ? null : Number(emdAmountActual),
                               emd_payment_ref: emdPaymentRef,
                               emd_payment_date: emdPaymentDate,
+                              assigned_mis_member: selectedMisMember,
                               payment_status: 'Pending'
                             })}
                           >
@@ -5335,16 +5362,16 @@ export default function Dashboard() {
                             <input 
                               type="text" 
                               placeholder="Discuss payment..." 
-                              value={commentText} 
-                              onChange={(e) => setCommentText(e.target.value)} 
+                              value={emdCommentText} 
+                              onChange={(e) => setEmdCommentText(e.target.value)} 
                               style={{ flexGrow: 1, padding: '4px 8px', fontSize: '11px', borderRadius: '4px', background: 'var(--bg-app)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
                             />
                             <button 
                               className="btn btn-primary" 
                               style={{ padding: '4px 8px', fontSize: '11px' }}
                               onClick={async () => {
-                                if (!commentText.trim()) return;
-                                await postComment('Payment');
+                                if (!emdCommentText.trim()) return;
+                                await postComment('Payment', emdCommentText);
                               }}
                             >
                               Post
@@ -5377,11 +5404,70 @@ export default function Dashboard() {
                       Upload final files to folder and request thorough verification review of bid templates, checklists, and signatures.
                     </p>
 
+                    {/* Working Folder Path (Documents Store) */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '10px' }}>
+                      <label style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span>Working Folder Path (Documents Store)</span>
+                      </label>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <input 
+                          type="text" 
+                          value={workingPath}
+                          onChange={(e) => setWorkingPath(e.target.value)}
+                          placeholder="e.g. /Shared/Tenders/2026/GEM-7324078"
+                          disabled={currentUser?.role === 'Admin'}
+                          style={{ 
+                            flexGrow: 1, 
+                            padding: '8px 12px', 
+                            borderRadius: '6px', 
+                            background: 'var(--bg-app)', 
+                            border: '1px solid var(--border-color)', 
+                            color: 'var(--text-primary)', 
+                            fontSize: '13px'
+                          }}
+                        />
+                        {currentUser?.role !== 'Admin' && (
+                          <button 
+                            className="btn btn-secondary" 
+                            style={{ padding: '8px 12px', fontSize: '12px' }}
+                            onClick={() => updateTenderField({ working_path: workingPath })}
+                          >
+                            Save Path
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Target MIS Team Representative Selector */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '12px' }}>
+                      <label style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase' }}>
+                        Target MIS Team Representative
+                      </label>
+                      <select 
+                        value={selectedMisMember}
+                        onChange={(e) => {
+                          setSelectedMisMember(e.target.value);
+                          updateTenderField({ assigned_mis_member: e.target.value });
+                        }}
+                        disabled={currentUser?.role === 'Admin'}
+                        style={{ padding: '8px 12px', borderRadius: '6px', background: 'var(--bg-app)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '13px', outline: 'none' }}
+                      >
+                        <option value="">-- Select Target MIS Representative --</option>
+                        {misTeamMembers.map(m => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                      </select>
+                    </div>
+
                     {(currentUser?.role === 'MIS Executive' || currentUser?.role === 'Tender Executive') && selectedTender.verification_status !== 'Approved' && (
                       <button 
                         className="btn btn-primary" 
                         style={{ width: '100%', padding: '6px 12px', fontSize: '12px', justifyContent: 'center', marginBottom: '12px' }}
-                        onClick={() => updateTenderField({ verification_status: 'Pending' })}
+                        onClick={() => updateTenderField({ 
+                          working_path: workingPath, 
+                          assigned_mis_member: selectedMisMember, 
+                          verification_status: 'Pending' 
+                        })}
                       >
                         Request Document Review
                       </button>
@@ -5429,16 +5515,16 @@ export default function Dashboard() {
                             <input 
                               type="text" 
                               placeholder="Add review feedback..." 
-                              value={commentText} 
-                              onChange={(e) => setCommentText(e.target.value)} 
+                              value={verificationCommentText} 
+                              onChange={(e) => setVerificationCommentText(e.target.value)} 
                               style={{ flexGrow: 1, padding: '4px 8px', fontSize: '11px', borderRadius: '4px', background: 'var(--bg-app)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
                             />
                             <button 
                               className="btn btn-primary" 
                               style={{ padding: '4px 8px', fontSize: '11px' }}
                               onClick={async () => {
-                                if (!commentText.trim()) return;
-                                await postComment('Verification');
+                                if (!verificationCommentText.trim()) return;
+                                await postComment('Verification', verificationCommentText);
                               }}
                             >
                               Post
@@ -5471,18 +5557,39 @@ export default function Dashboard() {
                       After physically/electronically filing the bid on the portal, request submission audit. Only the selected MIS Team member can verify and mark as Submitted.
                     </p>
 
+                    {/* Target MIS Team Representative Selector */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '12px' }}>
+                      <label style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase' }}>
+                        Target MIS Team Representative
+                      </label>
+                      <select 
+                        value={selectedMisMember}
+                        onChange={(e) => {
+                          setSelectedMisMember(e.target.value);
+                          updateTenderField({ assigned_mis_member: e.target.value });
+                        }}
+                        disabled={currentUser?.role === 'Admin'}
+                        style={{ padding: '8px 12px', borderRadius: '6px', background: 'var(--bg-app)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '13px', outline: 'none' }}
+                      >
+                        <option value="">-- Select Target MIS Representative --</option>
+                        {misTeamMembers.map(m => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                      </select>
+                    </div>
+
                     {(currentUser?.role === 'MIS Executive' || currentUser?.role === 'Tender Executive') && selectedTender.status !== 'Submitted' && selectedTender.status !== 'Filed' && selectedTender.submission_status !== 'Pending' && (
                       <button 
                         className="btn btn-primary" 
-                        style={{ width: '100%', padding: '6px 12px', fontSize: '12px', justifyContent: 'center' }}
-                        onClick={() => updateTenderField({ submission_status: 'Pending' })}
+                        style={{ width: '100%', padding: '6px 12px', fontSize: '12px', justifyContent: 'center', marginBottom: '12px' }}
+                        onClick={() => updateTenderField({ assigned_mis_member: selectedMisMember, submission_status: 'Pending' })}
                       >
                         Request Submission Verification
                       </button>
                     )}
 
                     {selectedTender.submission_status === 'Pending' && (currentUser?.username === selectedTender.assigned_mis_member || currentUser?.role === 'MIS Team') && (
-                      <div style={{ display: 'flex', gap: '8px', background: 'rgba(245, 158, 11, 0.05)', padding: '10px', borderRadius: '6px', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
+                      <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', background: 'rgba(245, 158, 11, 0.05)', padding: '10px', borderRadius: '6px', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
                         <button 
                           className="btn btn-primary" 
                           style={{ flex: 1, background: 'var(--accent-green)', borderColor: 'var(--accent-green)', padding: '6px 12px', fontSize: '12px', justifyContent: 'center' }}
@@ -5492,6 +5599,48 @@ export default function Dashboard() {
                         </button>
                       </div>
                     )}
+
+                    {/* Comments section for Submission */}
+                    {(() => {
+                      const phaseComments = comments.filter(c => c.phase === 'Submission');
+                      return (
+                        <div style={{ marginTop: '10px', borderTop: '1px solid var(--border-color)', paddingTop: '10px' }}>
+                          <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', marginBottom: '6px' }}>
+                            Submission Discussion ({phaseComments.length})
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '100px', overflowY: 'auto', marginBottom: '6px' }}>
+                            {phaseComments.map((c, i) => (
+                              <div key={i} style={{ background: 'rgba(255, 255, 255, 0.01)', padding: '6px', borderRadius: '4px', fontSize: '11px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '9px', marginBottom: '2px' }}>
+                                  <span style={{ fontWeight: '700' }}>{c.username}</span>
+                                  <span>{new Date(c.created_at).toLocaleDateString()}</span>
+                                </div>
+                                <div style={{ color: 'var(--text-primary)' }}>{c.comment}</div>
+                              </div>
+                            ))}
+                          </div>
+                          <div style={{ display: 'flex', gap: '6px' }}>
+                            <input 
+                              type="text" 
+                              placeholder="Discuss filing..." 
+                              value={submissionCommentText} 
+                              onChange={(e) => setSubmissionCommentText(e.target.value)} 
+                              style={{ flexGrow: 1, padding: '4px 8px', fontSize: '11px', borderRadius: '4px', background: 'var(--bg-app)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+                            />
+                            <button 
+                              className="btn btn-primary" 
+                              style={{ padding: '4px 8px', fontSize: '11px' }}
+                              onClick={async () => {
+                                if (!submissionCommentText.trim()) return;
+                                await postComment('Submission', submissionCommentText);
+                              }}
+                            >
+                              Post
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
 
