@@ -3457,7 +3457,7 @@ export default function Dashboard() {
                         }}
                       >
                         <option value="MIS Team">MIS Team</option>
-                        <option value="MIS Executive">MIS Executive</option>
+                        <option value="Tender Executive">Tender Executive</option>
                         <option value="Specification Team">Specification Team</option>
                       </select>
                     </div>
