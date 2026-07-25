@@ -214,34 +214,11 @@ export function hashPassword(password: string): string {
   return crypto.createHash('sha256').update(password).digest('hex');
 }
 
-// Seed default users if empty or missing
+// Seed default admin user if empty or missing
 try {
   const insertUser = db.prepare("INSERT OR IGNORE INTO users (username, password_hash, role, email) VALUES (?, ?, ?, ?)");
-  insertUser.run('admin', hashPassword('admin123'), 'Admin', 'anuthibhansali+admin@gmail.com');
-  insertUser.run('misteam', hashPassword('misteam123'), 'MIS Team', 'anuthibhansali+misteam@gmail.com');
-  insertUser.run('misteam1', hashPassword('misteam123'), 'MIS Team', 'anuthibhansali+misteam1@gmail.com');
-  insertUser.run('misteam2', hashPassword('misteam223'), 'MIS Team', 'anuthibhansali+misteam2@gmail.com');
-  insertUser.run('misexec1', hashPassword('misexec123'), 'MIS Executive', 'anuthibhansali+misexec1@gmail.com');
-  insertUser.run('misexec2', hashPassword('misexec223'), 'MIS Executive', 'anuthibhansali+misexec2@gmail.com');
-  insertUser.run('misexec3', hashPassword('misexec323'), 'MIS Executive', 'anuthibhansali+misexec3@gmail.com');
-  insertUser.run('executive', hashPassword('executive123'), 'MIS Executive', 'anuthibhansali+executive@gmail.com');
-  insertUser.run('specteam', hashPassword('specteam123'), 'Specification Team', 'anuthibhansali+specteam@gmail.com');
-  insertUser.run('specteam1', hashPassword('specteam123'), 'Specification Team', 'anuthibhansali+specteam1@gmail.com');
-
-  // Update emails if they are empty
-  db.exec(`
-    UPDATE users SET email = 'anuthibhansali+admin@gmail.com' WHERE username = 'admin' AND (email IS NULL OR email = '');
-    UPDATE users SET email = 'anuthibhansali+misteam@gmail.com' WHERE username = 'misteam' AND (email IS NULL OR email = '');
-    UPDATE users SET email = 'anuthibhansali+misteam1@gmail.com' WHERE username = 'misteam1' AND (email IS NULL OR email = '');
-    UPDATE users SET email = 'anuthibhansali+misteam2@gmail.com' WHERE username = 'misteam2' AND (email IS NULL OR email = '');
-    UPDATE users SET email = 'anuthibhansali+misexec1@gmail.com' WHERE username = 'misexec1' AND (email IS NULL OR email = '');
-    UPDATE users SET email = 'anuthibhansali+misexec2@gmail.com' WHERE username = 'misexec2' AND (email IS NULL OR email = '');
-    UPDATE users SET email = 'anuthibhansali+misexec3@gmail.com' WHERE username = 'misexec3' AND (email IS NULL OR email = '');
-    UPDATE users SET email = 'anuthibhansali+executive@gmail.com' WHERE username = 'executive' AND (email IS NULL OR email = '');
-    UPDATE users SET email = 'anuthibhansali+specteam@gmail.com' WHERE username = 'specteam' AND (email IS NULL OR email = '');
-    UPDATE users SET email = 'anuthibhansali+specteam1@gmail.com' WHERE username = 'specteam1' AND (email IS NULL OR email = '');
-  `);
-  console.log('Seeded database with default users and emails.');
+  insertUser.run('admin', hashPassword('admin123'), 'Admin', 'admin@company.com');
+  console.log('Seeded database with default admin user.');
 } catch (err) {
   console.error('Failed to seed default users:', err);
 }
