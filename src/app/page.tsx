@@ -39,7 +39,12 @@ import {
   ArrowUp,
   ArrowDown,
   ArrowUpDown,
-  ChevronLeft
+  ChevronLeft,
+  DollarSign,
+  Calendar,
+  MapPin,
+  Tag,
+  BookOpen
 } from 'lucide-react';
 import {
   BarChart,
@@ -4551,170 +4556,176 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* Detail Specifications */}
-              <div className="detail-grid">
-                <div className="detail-grid-item">
-                  <span className="detail-label">Estimated Value</span>
-                  <span className="detail-value highlight">
-                    {formatCost(selectedTender.estimated_cost, selectedTender.estimated_cost_raw)}
-                  </span>
+              {/* Tender Specifications & Parameters Card */}
+              <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '24px', marginBottom: '20px', boxShadow: 'var(--shadow-sm)', backdropFilter: 'blur(10px)' }}>
+                <h3 style={{ margin: '0 0 20px 0', fontSize: '15px', fontWeight: '700', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Building size={18} style={{ color: 'var(--primary)' }} />
+                  Tender Specifications & Parameters
+                </h3>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+                  {[
+                    { label: 'Procuring Authority', value: selectedTender.authority, icon: Building },
+                    { label: 'Official Reference No', value: selectedTender.ref_no, icon: FileText },
+                    { label: 'Estimated Value', value: selectedTender.estimated_cost_raw || (selectedTender.estimated_cost ? `₹ ${selectedTender.estimated_cost.toLocaleString('en-IN')}` : 'N/A'), icon: DollarSign, highlight: true },
+                    { label: 'Earnest Money Deposit (EMD)', value: selectedTender.emd_raw || 'N/A', icon: DollarSign },
+                    { label: 'Tender Document Fee', value: selectedTender.document_fee_raw || 'N/A', icon: Tag },
+                    { label: 'Tender Type (GeM / Non GeM)', value: selectedTender.tender_type || 'GeM', icon: FileText, color: selectedTender.tender_type === 'GeM' ? '#10b981' : '#3b82f6' },
+                    { label: 'Source Portal', value: selectedTender.source === 'GeM' ? 'GeM Portal' : 'Tender247 Portal', icon: Globe, color: selectedTender.source === 'GeM' ? '#10b981' : '#3b82f6' },
+                    { label: 'Source ID', value: selectedTender.source_id || 'N/A', icon: Tag },
+                    { label: 'Location / Region', value: selectedTender.location || 'N/A', icon: MapPin },
+                    { label: 'Place', value: selectedTender.place || 'N/A', icon: MapPin },
+                    { label: 'State', value: selectedTender.state || 'N/A', icon: MapPin },
+                    { label: 'Sector / Category', value: selectedTender.sector || 'N/A', icon: Tag },
+                    { label: 'Vertical Name', value: selectedTender.vertical_name || 'N/A', icon: Tag },
+                    { label: 'Publish Date', value: selectedTender.publish_date || 'N/A', icon: Calendar },
+                    { label: 'Start Date', value: selectedTender.start_date || 'N/A', icon: Calendar },
+                    { label: 'Closing Due Date', value: selectedTender.due_date || 'N/A', icon: Calendar, highlight: isClosingSoon(selectedTender.due_date), color: isClosingSoon(selectedTender.due_date) ? '#ef4444' : undefined },
+                    { label: 'Tender Opening Date', value: selectedTender.opening_date || 'N/A', icon: Calendar },
+                    { label: 'Pre-Bid Meeting Date', value: selectedTender.pre_bid_date || 'N/A', icon: Calendar },
+                    { label: 'Bid Submission Time', value: selectedTender.time || 'N/A', icon: Calendar },
+                    { label: 'Entry Date', value: selectedTender.entry_date || 'N/A', icon: Calendar },
+                    { label: 'Scraped At', value: selectedTender.scraped_at || 'N/A', icon: Calendar },
+                    { label: 'Bid Quantity', value: selectedTender.bid_qty !== null && selectedTender.bid_qty !== undefined ? String(selectedTender.bid_qty) : 'N/A', icon: Layers },
+                    { label: 'Quoted Quantity', value: selectedTender.quoted_qty !== null && selectedTender.quoted_qty !== undefined ? String(selectedTender.quoted_qty) : 'N/A', icon: Layers },
+                    { label: 'Corrigendum Remark', value: selectedTender.corrigendum_remark === 'Yes' ? 'Yes (Alert)' : 'No', icon: Activity, color: selectedTender.corrigendum_remark === 'Yes' ? '#ef4444' : 'var(--text-secondary)' }
+                  ].map((spec, index) => {
+                    const Icon = spec.icon;
+                    return (
+                      <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.015)', border: '1px solid var(--border-color)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)', color: 'var(--primary)' }}>
+                          <Icon size={18} />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '600' }}>{spec.label}</span>
+                          <span style={{ 
+                            fontSize: '13px', 
+                            fontWeight: spec.highlight ? '700' : '600', 
+                            color: spec.color || 'var(--text-primary)' 
+                          }}>
+                            {spec.value || 'N/A'}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-                <div className="detail-grid-item">
-                  <span className="detail-label">Closing Due Date</span>
-                  <span className="detail-value" style={{ fontWeight: '700', color: isClosingSoon(selectedTender.due_date) ? 'var(--accent-red)' : 'var(--text-primary)' }}>
-                    {formatDate(selectedTender.due_date)}
-                  </span>
-                </div>
-                <div className="detail-grid-item">
-                  <span className="detail-label">Earnest Money Deposit (EMD)</span>
-                  <span className="detail-value">{selectedTender.emd_raw || 'N/A'}</span>
-                </div>
-                <div className="detail-grid-item">
-                  <span className="detail-label">Tender Document Fee</span>
-                  <span className="detail-value">{selectedTender.document_fee_raw || 'N/A'}</span>
-                </div>
-                <div className="detail-grid-item">
-                  <span className="detail-label">Procuring Authority</span>
-                  <span className="detail-value">{selectedTender.authority || 'N/A'}</span>
-                </div>
-                <div className="detail-grid-item">
-                  <span className="detail-label">Official Reference No</span>
-                  <span className="detail-value">{selectedTender.ref_no || 'N/A'}</span>
-                </div>
-                <div className="detail-grid-item">
-                  <span className="detail-label">Location / Region</span>
-                  <span className="detail-value">{selectedTender.location || 'N/A'}</span>
-                </div>
-                <div className="detail-grid-item">
-                  <span className="detail-label">Sector / Category</span>
-                  <span className="detail-value">{selectedTender.sector || 'N/A'}</span>
-                </div>
-                {selectedTender.opening_date && (
-                  <div className="detail-grid-item">
-                    <span className="detail-label">Opening Date</span>
-                    <span className="detail-value">{formatDate(selectedTender.opening_date)}</span>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
+                  <div>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '700' }}>Product Name (As per Tender)</span>
+                    <p style={{ margin: '4px 0 0 0', fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>{selectedTender.product_name_as_per_tender || selectedTender.title || 'N/A'}</p>
                   </div>
-                )}
-                {selectedTender.scraped_at && (
-                  <div className="detail-grid-item">
-                    <span className="detail-label">Scraped At</span>
-                    <span className="detail-value">{formatDate(selectedTender.scraped_at)}</span>
+                  <div>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '700' }}>Product Name (As per Marken)</span>
+                    <p style={{ margin: '4px 0 0 0', fontSize: '14px', fontWeight: '700', color: 'var(--primary)' }}>{selectedTender.product_name_as_per_marken || 'N/A'}</p>
                   </div>
-                )}
-                <div className="detail-grid-item">
-                  <span className="detail-label">Tender Type (GeM / Non GeM)</span>
-                  <span className="detail-value" style={{ fontWeight: 'bold', color: selectedTender.tender_type === 'GeM' ? '#10b981' : '#3b82f6' }}>
-                    {selectedTender.tender_type || 'N/A'}
-                  </span>
-                </div>
-                <div className="detail-grid-item">
-                   <span className="detail-label">Source</span>
-                   <span className="detail-value" style={{ fontWeight: '700', color: selectedTender.source === 'GeM' ? '#10b981' : '#3b82f6' }}>
-                     {selectedTender.source === 'GeM' ? 'GeM Portal' : 'Tender247 Portal'}
-                   </span>
-                 </div>
-                <div className="detail-grid-item">
-                  <span className="detail-label">Source ID</span>
-                  <span className="detail-value">{selectedTender.source_id || 'N/A'}</span>
-                </div>
-                <div className="detail-grid-item">
-                  <span className="detail-label">Vertical Name</span>
-                  <span className="detail-value">{selectedTender.vertical_name || 'N/A'}</span>
-                </div>
-                <div className="detail-grid-item">
-                  <span className="detail-label">Place</span>
-                  <span className="detail-value">{selectedTender.place || 'N/A'}</span>
-                </div>
-                <div className="detail-grid-item">
-                  <span className="detail-label">State</span>
-                  <span className="detail-value">{selectedTender.state || 'N/A'}</span>
-                </div>
-                <div className="detail-grid-item">
-                  <span className="detail-label">Publish Date</span>
-                  <span className="detail-value">{selectedTender.publish_date || 'N/A'}</span>
-                </div>
-                <div className="detail-grid-item">
-                  <span className="detail-label">Start Date</span>
-                  <span className="detail-value">{selectedTender.start_date || 'N/A'}</span>
-                </div>
-                <div className="detail-grid-item">
-                  <span className="detail-label">End Date</span>
-                  <span className="detail-value">{selectedTender.due_date || 'N/A'}</span>
-                </div>
-                <div className="detail-grid-item">
-                  <span className="detail-label">Time</span>
-                  <span className="detail-value">{selectedTender.time || 'N/A'}</span>
-                </div>
-                <div className="detail-grid-item">
-                  <span className="detail-label">Pre Bid Date</span>
-                  <span className="detail-value">{selectedTender.pre_bid_date || 'N/A'}</span>
-                </div>
-                <div className="detail-grid-item">
-                  <span className="detail-label">Corrigendum Remark</span>
-                  <span className="detail-value" style={{ color: selectedTender.corrigendum_remark === 'Yes' ? '#ef4444' : 'var(--text-secondary)' }}>
-                    {selectedTender.corrigendum_remark || 'N/A'}
-                  </span>
-                </div>
-                <div className="detail-grid-item span-2">
-                  <span className="detail-label">Product Name (As per Tender)</span>
-                  <span className="detail-value">{selectedTender.product_name_as_per_tender || selectedTender.title || 'N/A'}</span>
-                </div>
-                <div className="detail-grid-item span-2">
-                  <span className="detail-label">Full Tender Brief / Description</span>
-                  <span className="detail-value" style={{ fontStyle: 'italic', color: 'var(--text-secondary)' }}>{selectedTender.title || 'N/A'}</span>
-                </div>
-                <div className="detail-grid-item span-2">
-                  <span className="detail-label">Product Name (As per MarkEn)</span>
-                  <span className="detail-value" style={{ fontWeight: '600', color: 'var(--primary)' }}>
-                    {selectedTender.product_name_as_per_marken || 'N/A'}
-                  </span>
-                </div>
-                <div className="detail-grid-item">
-                  <span className="detail-label">Entry Date</span>
-                  <span className="detail-value">{selectedTender.entry_date || 'N/A'}</span>
-                </div>
-
-                <div className="detail-grid-item span-2">
-                  <span className="detail-label">Source URLs</span>
-                  <a href={selectedTender.original_url} target="_blank" rel="noopener noreferrer" className="detail-value link">
-                    <span>View Tender Details Page on Tender247</span>
-                    <ExternalLink size={14} />
-                  </a>
-                </div>
-
-                {(selectedTender.downloaded_docs || selectedTender.document_url) && (
-                  <div className="detail-grid-item span-2">
-                    <span className="detail-label">NIT / Document Downloads</span>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
-                      {(() => {
-                        try {
-                          const docList = selectedTender.downloaded_docs 
-                            ? JSON.parse(selectedTender.downloaded_docs) 
-                            : null;
-                          if (Array.isArray(docList) && docList.length > 0) {
-                            return docList.map((doc: any, index: number) => (
-                              <a key={index} href={doc.local_path} target="_blank" rel="noopener noreferrer" className="detail-value link" style={{ display: 'flex', alignItems: 'center', gap: '6px', width: 'fit-content' }}>
-                                <span>{doc.name || 'Associated Document'} {doc.created_date ? `(${doc.created_date})` : ''}</span>
-                                <ExternalLink size={14} />
-                              </a>
-                            ));
-                          }
-                        } catch (e) {
-                          console.error("Failed to parse downloaded_docs:", e);
-                        }
-                        if (selectedTender.document_url) {
-                          return (
-                            <a href={selectedTender.document_url} target="_blank" rel="noopener noreferrer" className="detail-value link" style={{ display: 'flex', alignItems: 'center', gap: '6px', width: 'fit-content' }}>
-                              <span>Download Associated Tender Documents</span>
-                              <ExternalLink size={14} />
-                            </a>
-                          );
-                        }
-                        return null;
-                      })()}
+                  <div>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '700' }}>Full Tender Brief / Description</span>
+                    <p style={{ margin: '4px 0 0 0', fontSize: '13.5px', color: 'var(--text-secondary)', fontStyle: 'italic', lineHeight: '1.5' }}>{selectedTender.title || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '700' }}>Source Portal Link</span>
+                    <div style={{ marginTop: '6px' }}>
+                      <a href={selectedTender.original_url} target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', padding: '8px 16px', textDecoration: 'none' }}>
+                        View Official Portal Page <ExternalLink size={14} />
+                      </a>
                     </div>
                   </div>
-                )}
+                </div>
+              </div>
+
+              {/* Document Repository Card */}
+              <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '24px', marginBottom: '20px', boxShadow: 'var(--shadow-sm)', backdropFilter: 'blur(10px)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '700', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <BookOpen size={18} style={{ color: 'var(--primary)' }} />
+                    Document Repository & Bid Generator
+                  </h3>
+                  {currentUser?.role === 'MIS Executive' && (
+                    <button 
+                      className="btn btn-primary" 
+                      style={{ padding: '6px 14px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                      onClick={openBidDocForm}
+                    >
+                      <FileText size={14} /> Generate Word (.docx) Bid Docs
+                    </button>
+                  )}
+                </div>
+                
+                {(() => {
+                  let docList: any[] = [];
+                  if (selectedTender.downloaded_docs) {
+                    try {
+                      docList = JSON.parse(selectedTender.downloaded_docs);
+                    } catch {
+                      docList = [];
+                    }
+                  }
+                  
+                  if (!Array.isArray(docList) || docList.length === 0) {
+                    if (selectedTender.document_url) {
+                      docList = [{ name: 'Original Tender Document PDF', filename: 'Tender_Document.pdf', local_path: selectedTender.document_url, created_date: 'Official Download' }];
+                    }
+                  }
+
+                  if (!Array.isArray(docList) || docList.length === 0) {
+                    return (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '30px 0', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.01)', border: '1px dashed var(--border-color)', borderRadius: '8px' }}>
+                        <Inbox size={28} style={{ marginBottom: '8px', opacity: 0.5 }} />
+                        <p style={{ fontSize: '12.5px', margin: 0 }}>No documents generated or downloaded for this tender yet.</p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '12px' }}>
+                      {docList.map((doc: any, i: number) => {
+                        const isPdf = doc.filename?.toLowerCase().endsWith('.pdf') || doc.name?.toLowerCase().endsWith('.pdf');
+                        const isDocx = doc.filename?.toLowerCase().endsWith('.docx') || doc.name?.toLowerCase().endsWith('.docx');
+                        
+                        return (
+                          <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderRadius: '8px', background: 'rgba(255,255,255,0.015)', border: '1px solid var(--border-color)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', overflow: 'hidden', marginRight: '12px' }}>
+                              <div style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                justifyContent: 'center', 
+                                width: '36px', 
+                                height: '36px', 
+                                borderRadius: '6px', 
+                                background: isPdf ? 'rgba(239, 68, 68, 0.1)' : isDocx ? 'rgba(59, 130, 246, 0.1)' : 'rgba(255, 255, 255, 0.05)',
+                                color: isPdf ? '#ef4444' : isDocx ? '#3b82f6' : 'var(--text-muted)' 
+                              }}>
+                                <FileText size={18} />
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                                <span style={{ fontSize: '12.5px', fontWeight: '700', color: 'var(--text-primary)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }} title={doc.name || doc.filename}>
+                                  {doc.name || doc.filename}
+                                </span>
+                                <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                                  Added: {doc.created_date || 'N/A'}
+                                </span>
+                              </div>
+                            </div>
+                            {(doc.local_path || doc.url) && (
+                              <a 
+                                href={doc.local_path || doc.url} 
+                                download={doc.filename}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="btn btn-secondary"
+                                style={{ padding: '6px 12px', fontSize: '11px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}
+                              >
+                                <Download size={12} /> Download
+                              </a>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Executive & Quantity Management */}
