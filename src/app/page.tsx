@@ -944,7 +944,21 @@ export default function Dashboard() {
 
   // Open Tender Detail Drawer
   const openTenderDetails = (tender: Tender) => {
-    router.push(`/tenders/${tender.id}`);
+    setSelectedTender(tender);
+    setTenderNotes(tender.notes || '');
+    setWorkingPath(tender.working_path || '');
+    setEmdPaymentMode(tender.emd_payment_mode || '');
+    setEmdPaymentRef(tender.emd_payment_ref || '');
+    setEmdAmountActual(tender.emd_amount_actual ?? '');
+    setEmdPaymentDate(tender.emd_payment_date || '');
+    setLossReason(tender.loss_reason || '');
+    setBidQty(tender.bid_qty ?? '');
+    setQuotedQty(tender.quoted_qty ?? '');
+    setMisExecutive(tender.mis_executive || '');
+    setSelectedMisMember(tender.assigned_mis_member || '');
+
+    fetchHistoryAndSummaries(tender.id);
+    fetchComments(tender.id);
   };
 
   // Handle Dashboard Metric Card Click
@@ -1928,7 +1942,7 @@ export default function Dashboard() {
                     ) : (
                       <div className="tender-list-container" style={{ maxHeight: '420px' }}>
                         {tenders.slice(0, 5).map(tender => (
-                          <Link key={tender.id} href={`/tenders/${tender.id}`} className="tender-item" style={{ textDecoration: 'none', color: 'inherit', display: 'flex' }}>
+                          <div key={tender.id} onClick={() => openTenderDetails(tender)} className="tender-item" style={{ textDecoration: 'none', color: 'inherit', display: 'flex', cursor: 'pointer' }}>
                             <div className="tender-item-left">
                               <div className="tender-meta-row">
                                 <span className="tender-id-badge">{tender.id}</span>
@@ -1968,7 +1982,7 @@ export default function Dashboard() {
                                 {getDeadlineStatus(tender.due_date).label}: {formatDate(tender.due_date)}
                               </div>
                             </div>
-                          </Link>
+                          </div>
                         ))}
                       </div>
                     )}
@@ -2158,7 +2172,7 @@ export default function Dashboard() {
                   return (
                     <div className="tender-list-container" style={{ maxHeight: '600px' }}>
                       {displayedTenders.map(tender => (
-                        <Link key={tender.id} href={`/tenders/${tender.id}`} className="tender-item" style={{ textDecoration: 'none', color: 'inherit', display: 'flex' }}>
+                        <div key={tender.id} onClick={() => openTenderDetails(tender)} className="tender-item" style={{ textDecoration: 'none', color: 'inherit', display: 'flex', cursor: 'pointer' }}>
                         <div className="tender-item-left">
                           <div className="tender-meta-row">
                             <span className="tender-id-badge">{tender.id}</span>
@@ -2213,7 +2227,7 @@ export default function Dashboard() {
                             {getDeadlineStatus(tender.due_date).label}: {formatDate(tender.due_date)}
                           </div>
                         </div>
-                      </Link>
+                      </div>
                     ))}
                   </div>
                 );
@@ -4144,8 +4158,9 @@ export default function Dashboard() {
                                     {paginatedTenders.map((tender) => (
                                       <tr key={tender.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
                                         <td style={{ padding: '14px 8px', fontSize: '13px' }}>
-                                          <Link
-                                            href={`/tenders/${tender.id}`}
+                                          <button
+                                            type="button"
+                                            onClick={() => openTenderDetails(tender)}
                                             style={{
                                               background: 'transparent',
                                               border: 'none',
@@ -4157,7 +4172,7 @@ export default function Dashboard() {
                                             }}
                                           >
                                             {tender.id}
-                                          </Link>
+                                          </button>
                                           {isAssignmentStale(tender) && (
                                             <span style={{
                                               display: 'inline-flex',
