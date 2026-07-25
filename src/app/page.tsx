@@ -942,24 +942,9 @@ export default function Dashboard() {
     }
   };
 
-  // Open Tender Detail Drawer
+  // Open Dedicated Tender Detail Page
   const openTenderDetails = (tender: Tender) => {
-    setSelectedTender(tender);
-    setIsDrawerOpen(true);
-    setTenderNotes(tender.notes || '');
-    setWorkingPath(tender.working_path || '');
-    setEmdPaymentMode(tender.emd_payment_mode || '');
-    setEmdPaymentRef(tender.emd_payment_ref || '');
-    setEmdAmountActual(tender.emd_amount_actual ?? '');
-    setEmdPaymentDate(tender.emd_payment_date || '');
-    setLossReason(tender.loss_reason || '');
-    setBidQty(tender.bid_qty ?? '');
-    setQuotedQty(tender.quoted_qty ?? '');
-    setMisExecutive(tender.mis_executive || '');
-    setSelectedMisMember(tender.assigned_mis_member || '');
-
-    fetchHistoryAndSummaries(tender.id);
-    fetchComments(tender.id);
+    router.push(`/tenders/${tender.id}`);
   };
 
   // Handle Dashboard Metric Card Click
