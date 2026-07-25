@@ -1122,7 +1122,7 @@ export default function Dashboard() {
         if (misExecutive !== selectedTender.mis_executive) {
           extraFields.assigned_by = misExecutive ? currentUser?.username : null;
           extraFields.assigned_at = misExecutive ? new Date().toISOString() : null;
-          if (misExecutive && (selectedTender.status === 'New' || selectedTender.status === 'Lapsed')) {
+          if (misExecutive && (!selectedTender.status || selectedTender.status === 'New' || selectedTender.status === 'Issued' || selectedTender.status === 'Lapsed' || selectedTender.status === 'Lapsed (Unreviewed)')) {
             extraFields.status = 'Participating';
           }
         }

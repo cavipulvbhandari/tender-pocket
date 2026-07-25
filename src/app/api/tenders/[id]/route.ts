@@ -257,8 +257,8 @@ export async function PATCH(
       fieldsToUpdate.push('assigned_at = ?');
       updateParams.push(mis_executive ? new Date().toISOString() : null);
 
-      // Auto-participate if currently New/Lapsed
-      if (mis_executive && (oldTender.status === 'Issued' || !oldTender.status || oldTender.status === 'Lapsed (Unreviewed)')) {
+      // Auto-participate if currently New, Issued, or Lapsed
+      if (mis_executive && (!oldTender.status || oldTender.status === 'Issued' || oldTender.status === 'New' || oldTender.status === 'Lapsed' || oldTender.status === 'Lapsed (Unreviewed)')) {
         fieldsToUpdate.push('status = ?');
         updateParams.push('Participating');
         logDetails.push(`status auto-changed to 'Participating' on assignment`);
