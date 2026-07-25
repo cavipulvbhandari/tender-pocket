@@ -23,9 +23,9 @@ export async function GET(
     const userRole = request.headers.get('x-user-role');
     const username = request.headers.get('x-user-username');
 
-    if (userRole === 'Specification Team' && tender.assigned_mis_member_spec !== username) {
+    if (userRole === 'Specification Team' && tender.assigned_mis_member_spec && tender.assigned_mis_member_spec !== username) {
       return NextResponse.json(
-        { success: false, error: 'Access denied: This tender is not assigned to your Specification Team account' },
+        { success: false, error: 'Access denied: This tender is assigned to another Specification Team member' },
         { status: 403 }
       );
     }
