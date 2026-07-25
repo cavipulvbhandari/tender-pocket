@@ -217,7 +217,7 @@ export function hashPassword(password: string): string {
 // Seed default admin user if empty or missing
 try {
   const insertUser = db.prepare("INSERT OR IGNORE INTO users (username, password_hash, role, email) VALUES (?, ?, ?, ?)");
-  insertUser.run('admin', hashPassword('admin123'), 'Admin', 'admin@company.com');
+  insertUser.run('admin', hashPassword('Marken@123$'), 'Admin', 'admin@company.com');
   console.log('Seeded database with default admin user.');
 } catch (err) {
   console.error('Failed to seed default users:', err);
