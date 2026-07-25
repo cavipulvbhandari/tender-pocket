@@ -153,8 +153,11 @@ export default function Dashboard() {
   const [sortBy, setSortBy] = useState('scraped_at');
   const [sortOrder, setSortOrder] = useState('desc');
 
-  // Interactive States
   const [selectedTender, setSelectedTender] = useState<Tender | null>(null);
+  const selectedTenderRef = useRef<Tender | null>(selectedTender);
+  useEffect(() => {
+    selectedTenderRef.current = selectedTender;
+  }, [selectedTender]);
 
   const isOutcomeState = selectedTender ? (
     selectedTender.status === 'Submitted' || 
@@ -765,6 +768,12 @@ export default function Dashboard() {
           const tData = await tResp.json();
           if (tData.success && tData.tenders) {
             setTenders(tData.tenders);
+            if (selectedTenderRef.current) {
+              const freshSel = tData.tenders.find((t: any) => t.id === selectedTenderRef.current?.id);
+              if (freshSel) {
+                setSelectedTender(prev => prev ? { ...prev, ...freshSel } : null);
+              }
+            }
           }
         }
 
@@ -798,10 +807,21 @@ export default function Dashboard() {
             }
           }
         }
+
+        // 5. Silent fetch comments & history for currently open tender drawer
+        if (selectedTenderRef.current) {
+          const cResp = await fetchWithAuth(`/api/tenders/${selectedTenderRef.current.id}/comments?t=${Date.now()}`);
+          if (cResp.ok) {
+            const cData = await cResp.json();
+            if (cData.success && cData.comments) {
+              setComments(cData.comments);
+            }
+          }
+        }
       } catch (err) {
         console.error('Dashboard silent background poll failed:', err);
       }
-    }, 2500); // Poll every 2.5 seconds
+    }, 2000); // Poll every 2 seconds for instant real-time sync
 
     return () => clearInterval(interval);
   }, [mounted, currentUser, searchQuery, statusFilter, locationFilter, sectorFilter, sortBy, sortOrder, activeTab, misExecutiveFilter]);
