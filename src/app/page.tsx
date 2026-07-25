@@ -945,6 +945,7 @@ export default function Dashboard() {
   // Open Tender Detail Drawer
   const openTenderDetails = (tender: Tender) => {
     setSelectedTender(tender);
+    setIsDrawerOpen(true);
     setTenderNotes(tender.notes || '');
     setWorkingPath(tender.working_path || '');
     setEmdPaymentMode(tender.emd_payment_mode || '');
