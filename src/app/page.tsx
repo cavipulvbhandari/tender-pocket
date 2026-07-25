@@ -356,6 +356,7 @@ export default function Dashboard() {
     }
   };
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const hasCheckedUrlRouteRef = useRef(false);
 
 
 
@@ -427,47 +428,35 @@ export default function Dashboard() {
     }
   }, [activeTab, currentUser]);
 
-  // Handle direct /tenders/[id] routing and browser history navigation
+  // Handle direct /tenders/[id] routing once on initial page load
   useEffect(() => {
-    if (!mounted || !tenders.length) return;
+    if (!mounted || !tenders.length || hasCheckedUrlRouteRef.current) return;
 
-    const checkUrlRoute = () => {
-      const pathname = window.location.pathname;
-      if (pathname.startsWith('/tenders/')) {
-        const idFromUrl = pathname.replace('/tenders/', '').trim();
-        if (idFromUrl) {
-          const match = tenders.find(t => String(t.id) === idFromUrl);
-          if (match) {
-            openTenderDetails(match);
-          } else {
-            fetchWithAuth(`/api/tenders/${idFromUrl}`).then(res => res.json()).then(data => {
-              if (data.success && data.tender) {
-                openTenderDetails(data.tender);
-              }
-            }).catch(() => {});
-          }
-        }
-      }
-    };
-
-    checkUrlRoute();
-
-    const handlePopState = () => {
-      const pathname = window.location.pathname;
-      if (pathname.startsWith('/tenders/')) {
-        const idFromUrl = pathname.replace('/tenders/', '').trim();
+    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/tenders/')) {
+      const idFromUrl = window.location.pathname.replace('/tenders/', '').trim();
+      if (idFromUrl) {
+        hasCheckedUrlRouteRef.current = true;
         const match = tenders.find(t => String(t.id) === idFromUrl);
         if (match) {
-          openTenderDetails(match);
-        }
-      } else {
-        setIsDrawerOpen(false);
-        setSelectedTender(null);
-      }
-    };
+          setSelectedTender(match);
+          setIsDrawerOpen(true);
+          setTenderNotes(match.notes || '');
+          setWorkingPath(match.working_path || '');
+          setEmdPaymentMode(match.emd_payment_mode || '');
+          setEmdPaymentRef(match.emd_payment_ref || '');
+          setEmdAmountActual(match.emd_amount_actual ?? '');
+          setEmdPaymentDate(match.emd_payment_date || '');
+          setLossReason(match.loss_reason || '');
+          setBidQty(match.bid_qty ?? '');
+          setQuotedQty(match.quoted_qty ?? '');
+          setMisExecutive(match.mis_executive || '');
+          setSelectedMisMember(match.assigned_mis_member || '');
 
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+          fetchHistoryAndSummaries(match.id);
+          fetchComments(match.id);
+        }
+      }
+    }
   }, [mounted, tenders]);
 
   const fetchData = async () => {
@@ -993,18 +982,12 @@ export default function Dashboard() {
   const closeTenderDetails = () => {
     setIsDrawerOpen(false);
     setSelectedTender(null);
-    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/tenders/')) {
-      window.history.pushState({}, '', `/#/${activeTab}`);
-    }
   };
 
   // Open Dedicated Full-Page Tender Detail View
   const openTenderDetails = (tender: Tender) => {
     setSelectedTender(tender);
     setIsDrawerOpen(true);
-    if (typeof window !== 'undefined' && !window.location.pathname.endsWith(`/tenders/${tender.id}`)) {
-      window.history.pushState({ tenderId: tender.id }, '', `/tenders/${tender.id}`);
-    }
     setTenderNotes(tender.notes || '');
     setWorkingPath(tender.working_path || '');
     setEmdPaymentMode(tender.emd_payment_mode || '');
