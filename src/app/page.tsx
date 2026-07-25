@@ -942,9 +942,24 @@ export default function Dashboard() {
     }
   };
 
-  // Open Dedicated Tender Detail Page
+  // Open Dedicated Full-Page Tender Detail View
   const openTenderDetails = (tender: Tender) => {
-    router.push(`/tenders/${tender.id}`);
+    setSelectedTender(tender);
+    setIsDrawerOpen(true);
+    setTenderNotes(tender.notes || '');
+    setWorkingPath(tender.working_path || '');
+    setEmdPaymentMode(tender.emd_payment_mode || '');
+    setEmdPaymentRef(tender.emd_payment_ref || '');
+    setEmdAmountActual(tender.emd_amount_actual ?? '');
+    setEmdPaymentDate(tender.emd_payment_date || '');
+    setLossReason(tender.loss_reason || '');
+    setBidQty(tender.bid_qty ?? '');
+    setQuotedQty(tender.quoted_qty ?? '');
+    setMisExecutive(tender.mis_executive || '');
+    setSelectedMisMember(tender.assigned_mis_member || '');
+
+    fetchHistoryAndSummaries(tender.id);
+    fetchComments(tender.id);
   };
 
   // Handle Dashboard Metric Card Click
@@ -4396,18 +4411,36 @@ export default function Dashboard() {
         )}
       </main>
 
-      {/* Slide-In Side Drawer for Tender Details */}
+      {/* Dedicated Full-Page View for Tender Details */}
       <div className={`drawer-backdrop ${isDrawerOpen ? 'open' : ''}`} onClick={() => setIsDrawerOpen(false)}>
-        <div className="drawer" onClick={(e) => e.stopPropagation()}>
+        <div className="drawer" style={{ width: '100vw', maxWidth: '100vw', height: '100vh', borderRadius: 0, top: 0, right: 0, zIndex: 99999 }} onClick={(e) => e.stopPropagation()}>
           {selectedTender && (
             <>
-              <header className="drawer-header">
-                <div className="drawer-title-area">
+              <header className="drawer-header" style={{ padding: '16px 24px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-card)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  <button 
+                    onClick={() => setIsDrawerOpen(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: 'rgba(255, 255, 255, 0.08)',
+                      border: '1px solid var(--border-color)',
+                      color: 'var(--text-primary)',
+                      padding: '8px 14px',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontWeight: '600',
+                      fontSize: '13px'
+                    }}
+                  >
+                    <ChevronLeft size={16} /> Back to Dashboard
+                  </button>
                   <div className="tender-id-badge">T247 ID: {selectedTender.id}</div>
-                  <h2 className="drawer-title">{selectedTender.product_name_as_per_tender || selectedTender.title}</h2>
+                  <h2 className="drawer-title" style={{ margin: 0, fontSize: '18px', fontWeight: '700' }}>{selectedTender.product_name_as_per_tender || selectedTender.title}</h2>
                 </div>
                 <button className="drawer-close" onClick={() => setIsDrawerOpen(false)}>
-                  <X size={18} />
+                  <X size={20} />
                 </button>
               </header>
 
