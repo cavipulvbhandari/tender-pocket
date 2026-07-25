@@ -1366,20 +1366,6 @@ export default function Dashboard() {
               {loginLoading ? <Loader2 className="animate-spin" size={16} /> : 'Sign In'}
             </button>
           </form>
-
-          <div style={{
-            borderTop: '1px solid var(--border-color)',
-            paddingTop: '16px',
-            fontSize: '12px',
-            color: 'var(--text-muted)'
-          }}>
-            <div style={{ fontWeight: 'bold', marginBottom: '8px', color: 'var(--text-secondary)' }}>Demo Accounts:</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 12px' }}>
-              <span>MIS Team:</span> <strong>misteam / misteam123</strong>
-              <span>MIS Exec:</span> <strong>misexec1 / misexec123</strong>
-              <span>Admin:</span> <strong>admin / admin123</strong>
-            </div>
-          </div>
         </div>
       </div>
     );
