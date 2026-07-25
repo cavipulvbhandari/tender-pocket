@@ -122,6 +122,9 @@ export default function Dashboard() {
   // Custom fetch wrapper injecting authentication headers
   const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
     const headers = new Headers(options.headers || {});
+    headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    headers.set('Pragma', 'no-cache');
+    headers.set('Expires', '0');
     if (currentUser) {
       headers.set('x-user-role', currentUser.role);
       headers.set('x-user-username', currentUser.username);
@@ -130,7 +133,7 @@ export default function Dashboard() {
         headers.set('Authorization', `Bearer ${token}`);
       }
     }
-    return fetch(url, { ...options, headers });
+    return fetch(url, { cache: 'no-store', ...options, headers });
   };
   
   // Data States
@@ -158,6 +161,38 @@ export default function Dashboard() {
   useEffect(() => {
     selectedTenderRef.current = selectedTender;
   }, [selectedTender]);
+
+  // Keep form inputs in sync with selectedTender when updated externally in real-time
+  useEffect(() => {
+    if (selectedTender) {
+      setTenderNotes(selectedTender.notes || '');
+      setWorkingPath(selectedTender.working_path || '');
+      setEmdPaymentMode(selectedTender.emd_payment_mode || '');
+      setEmdPaymentRef(selectedTender.emd_payment_ref || '');
+      setEmdAmountActual(selectedTender.emd_amount_actual ?? '');
+      setEmdPaymentDate(selectedTender.emd_payment_date || '');
+      setLossReason(selectedTender.loss_reason || '');
+      setBidQty(selectedTender.bid_qty ?? '');
+      setQuotedQty(selectedTender.quoted_qty ?? '');
+      setMisExecutive(selectedTender.mis_executive || '');
+      setSelectedMisMember(selectedTender.assigned_mis_member || '');
+    }
+  }, [
+    selectedTender?.id, 
+    selectedTender?.status, 
+    selectedTender?.payment_status, 
+    selectedTender?.verification_status, 
+    selectedTender?.submission_status, 
+    selectedTender?.working_path, 
+    selectedTender?.emd_payment_mode, 
+    selectedTender?.emd_payment_ref, 
+    selectedTender?.emd_amount_actual, 
+    selectedTender?.emd_payment_date, 
+    selectedTender?.notes, 
+    selectedTender?.loss_reason, 
+    selectedTender?.assigned_mis_member, 
+    selectedTender?.mis_executive
+  ]);
 
   const isOutcomeState = selectedTender ? (
     selectedTender.status === 'Submitted' || 
@@ -808,9 +843,18 @@ export default function Dashboard() {
           }
         }
 
-        // 5. Silent fetch comments & history for currently open tender drawer
+        // 5. Silent fetch full tender object & comments for currently open tender drawer
         if (selectedTenderRef.current) {
-          const cResp = await fetchWithAuth(`/api/tenders/${selectedTenderRef.current.id}/comments?t=${Date.now()}`);
+          const activeId = selectedTenderRef.current.id;
+          const tDetailResp = await fetchWithAuth(`/api/tenders/${activeId}?t=${Date.now()}`);
+          if (tDetailResp.ok) {
+            const tDetailData = await tDetailResp.json();
+            if (tDetailData.success && tDetailData.tender) {
+              setSelectedTender(tDetailData.tender);
+            }
+          }
+
+          const cResp = await fetchWithAuth(`/api/tenders/${activeId}/comments?t=${Date.now()}`);
           if (cResp.ok) {
             const cData = await cResp.json();
             if (cData.success && cData.comments) {
@@ -821,7 +865,7 @@ export default function Dashboard() {
       } catch (err) {
         console.error('Dashboard silent background poll failed:', err);
       }
-    }, 2000); // Poll every 2 seconds for instant real-time sync
+    }, 1500); // Poll every 1.5 seconds for instant real-time sync across sessions
 
     return () => clearInterval(interval);
   }, [mounted, currentUser, searchQuery, statusFilter, locationFilter, sectorFilter, sortBy, sortOrder, activeTab, misExecutiveFilter]);
