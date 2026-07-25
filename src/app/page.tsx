@@ -459,6 +459,45 @@ export default function Dashboard() {
     }
   }, [mounted, tenders]);
 
+  // Handle browser Back / Forward navigation popstate events
+  useEffect(() => {
+    if (!mounted) return;
+
+    const handlePopState = () => {
+      const pathname = window.location.pathname;
+      if (pathname.startsWith('/tenders/')) {
+        const idFromUrl = pathname.replace('/tenders/', '').trim();
+        if (idFromUrl) {
+          const match = tenders.find(t => String(t.id) === idFromUrl);
+          if (match) {
+            setSelectedTender(match);
+            setIsDrawerOpen(true);
+            setTenderNotes(match.notes || '');
+            setWorkingPath(match.working_path || '');
+            setEmdPaymentMode(match.emd_payment_mode || '');
+            setEmdPaymentRef(match.emd_payment_ref || '');
+            setEmdAmountActual(match.emd_amount_actual ?? '');
+            setEmdPaymentDate(match.emd_payment_date || '');
+            setLossReason(match.loss_reason || '');
+            setBidQty(match.bid_qty ?? '');
+            setQuotedQty(match.quoted_qty ?? '');
+            setMisExecutive(match.mis_executive || '');
+            setSelectedMisMember(match.assigned_mis_member || '');
+
+            fetchHistoryAndSummaries(match.id);
+            fetchComments(match.id);
+          }
+        }
+      } else {
+        setIsDrawerOpen(false);
+        setSelectedTender(null);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [mounted, tenders]);
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -982,12 +1021,18 @@ export default function Dashboard() {
   const closeTenderDetails = () => {
     setIsDrawerOpen(false);
     setSelectedTender(null);
+    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/tenders/')) {
+      window.history.pushState({}, '', `/#/${activeTab}`);
+    }
   };
 
   // Open Dedicated Full-Page Tender Detail View
   const openTenderDetails = (tender: Tender) => {
     setSelectedTender(tender);
     setIsDrawerOpen(true);
+    if (typeof window !== 'undefined' && window.location.pathname !== `/tenders/${tender.id}`) {
+      window.history.pushState({ tenderId: tender.id }, '', `/tenders/${tender.id}`);
+    }
     setTenderNotes(tender.notes || '');
     setWorkingPath(tender.working_path || '');
     setEmdPaymentMode(tender.emd_payment_mode || '');
