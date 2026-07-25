@@ -427,6 +427,49 @@ export default function Dashboard() {
     }
   }, [activeTab, currentUser]);
 
+  // Handle direct /tenders/[id] routing and browser history navigation
+  useEffect(() => {
+    if (!mounted || !tenders.length) return;
+
+    const checkUrlRoute = () => {
+      const pathname = window.location.pathname;
+      if (pathname.startsWith('/tenders/')) {
+        const idFromUrl = pathname.replace('/tenders/', '').trim();
+        if (idFromUrl) {
+          const match = tenders.find(t => String(t.id) === idFromUrl);
+          if (match) {
+            openTenderDetails(match);
+          } else {
+            fetchWithAuth(`/api/tenders/${idFromUrl}`).then(res => res.json()).then(data => {
+              if (data.success && data.tender) {
+                openTenderDetails(data.tender);
+              }
+            }).catch(() => {});
+          }
+        }
+      }
+    };
+
+    checkUrlRoute();
+
+    const handlePopState = () => {
+      const pathname = window.location.pathname;
+      if (pathname.startsWith('/tenders/')) {
+        const idFromUrl = pathname.replace('/tenders/', '').trim();
+        const match = tenders.find(t => String(t.id) === idFromUrl);
+        if (match) {
+          openTenderDetails(match);
+        }
+      } else {
+        setIsDrawerOpen(false);
+        setSelectedTender(null);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [mounted, tenders]);
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -947,10 +990,21 @@ export default function Dashboard() {
     }
   };
 
+  const closeTenderDetails = () => {
+    setIsDrawerOpen(false);
+    setSelectedTender(null);
+    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/tenders/')) {
+      window.history.pushState({}, '', `/#/${activeTab}`);
+    }
+  };
+
   // Open Dedicated Full-Page Tender Detail View
   const openTenderDetails = (tender: Tender) => {
     setSelectedTender(tender);
     setIsDrawerOpen(true);
+    if (typeof window !== 'undefined' && !window.location.pathname.endsWith(`/tenders/${tender.id}`)) {
+      window.history.pushState({ tenderId: tender.id }, '', `/tenders/${tender.id}`);
+    }
     setTenderNotes(tender.notes || '');
     setWorkingPath(tender.working_path || '');
     setEmdPaymentMode(tender.emd_payment_mode || '');
@@ -4417,14 +4471,14 @@ export default function Dashboard() {
       </main>
 
       {/* Dedicated Full-Page View for Tender Details */}
-      <div className={`drawer-backdrop ${isDrawerOpen ? 'open' : ''}`} onClick={() => setIsDrawerOpen(false)}>
+      <div className={`drawer-backdrop ${isDrawerOpen ? 'open' : ''}`} onClick={closeTenderDetails}>
         <div className="drawer" style={{ width: '100vw', maxWidth: '100vw', height: '100vh', borderRadius: 0, top: 0, right: 0, zIndex: 99999, background: 'var(--bg-app)', padding: '24px 32px', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
           {selectedTender && (
             <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
               <header className="drawer-header" style={{ padding: '0 0 20px 0', marginBottom: '24px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'transparent' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                   <button 
-                    onClick={() => { setIsDrawerOpen(false); setSelectedTender(null); }}
+                    onClick={closeTenderDetails}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
