@@ -76,7 +76,7 @@ export async function GET(request: Request) {
     const today = new Date();
 
     // Seed default map with all executives
-    const users = db.prepare("SELECT username FROM users WHERE role = 'MIS Executive'").all() as { username: string }[];
+    const users = db.prepare("SELECT username FROM users WHERE role = 'MIS Executive' OR role = 'Tender Executive'").all() as { username: string }[];
     for (const u of users) {
       statsMap[u.username] = {
         executive: u.username,
