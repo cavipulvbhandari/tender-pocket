@@ -4413,35 +4413,42 @@ export default function Dashboard() {
 
       {/* Dedicated Full-Page View for Tender Details */}
       <div className={`drawer-backdrop ${isDrawerOpen ? 'open' : ''}`} onClick={() => setIsDrawerOpen(false)}>
-        <div className="drawer" style={{ width: '100vw', maxWidth: '100vw', height: '100vh', borderRadius: 0, top: 0, right: 0, zIndex: 99999 }} onClick={(e) => e.stopPropagation()}>
+        <div className="drawer" style={{ width: '100vw', maxWidth: '100vw', height: '100vh', borderRadius: 0, top: 0, right: 0, zIndex: 99999, background: 'var(--bg-app)', padding: '24px 32px', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
           {selectedTender && (
-            <>
-              <header className="drawer-header" style={{ padding: '16px 24px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-card)' }}>
+            <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+              <header className="drawer-header" style={{ padding: '0 0 20px 0', marginBottom: '24px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'transparent' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                   <button 
-                    onClick={() => setIsDrawerOpen(false)}
+                    onClick={() => { setIsDrawerOpen(false); setSelectedTender(null); }}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '6px',
-                      background: 'rgba(255, 255, 255, 0.08)',
+                      gap: '8px',
+                      background: 'var(--bg-card)',
                       border: '1px solid var(--border-color)',
                       color: 'var(--text-primary)',
-                      padding: '8px 14px',
-                      borderRadius: '8px',
+                      padding: '10px 18px',
+                      borderRadius: '10px',
                       cursor: 'pointer',
-                      fontWeight: '600',
-                      fontSize: '13px'
+                      fontWeight: '700',
+                      fontSize: '13px',
+                      boxShadow: 'var(--shadow-sm)'
                     }}
                   >
-                    <ChevronLeft size={16} /> Back to Dashboard
+                    <ChevronLeft size={18} /> Back to Dashboard
                   </button>
-                  <div className="tender-id-badge">T247 ID: {selectedTender.id}</div>
-                  <h2 className="drawer-title" style={{ margin: 0, fontSize: '18px', fontWeight: '700' }}>{selectedTender.product_name_as_per_tender || selectedTender.title}</h2>
+                  <div>
+                    <h1 style={{ margin: 0, fontSize: '22px', fontWeight: '800', color: 'var(--text-primary)' }}>
+                      {selectedTender.product_name_as_per_tender || selectedTender.title}
+                    </h1>
+                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                      Tender ID: <strong>{selectedTender.id}</strong> | Reference: <strong>{selectedTender.ref_no || 'N/A'}</strong> | Source: <strong>{selectedTender.source || 'Tender247'}</strong>
+                    </span>
+                  </div>
                 </div>
-                <button className="drawer-close" onClick={() => setIsDrawerOpen(false)}>
-                  <X size={20} />
-                </button>
+                <span className={`status-badge ${selectedTender.status}`} style={{ fontSize: '13px', padding: '8px 18px', borderRadius: '20px', fontWeight: 'bold' }}>
+                  {selectedTender.status}
+                </span>
               </header>
 
               {/* Tender & Status Summaries */}
@@ -5402,7 +5409,7 @@ export default function Dashboard() {
                   </div>
                 )}
               </div>
-            </>
+            </div>
           )}
         </div>
       </div>
