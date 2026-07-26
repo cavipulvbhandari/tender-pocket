@@ -1812,9 +1812,8 @@ export default function Dashboard() {
             <button 
               className="btn btn-secondary btn-icon-only" 
               onClick={handleRefresh} 
-              disabled={refreshing || currentUser?.role === 'Admin'}
-              style={currentUser?.role === 'Admin' ? { cursor: 'not-allowed', opacity: 0.5 } : {}}
-              title={currentUser?.role === 'Admin' ? "Sync restricted for Admin" : "Refresh sync"}
+              disabled={refreshing}
+              title="Refresh sync"
             >
               <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
             </button>
@@ -2179,12 +2178,12 @@ export default function Dashboard() {
                       </p>
                       <button 
                         className="btn btn-primary" 
-                        style={{ width: '100%', justifyContent: 'center', gap: '8px', cursor: currentUser?.role === 'Admin' ? 'not-allowed' : 'pointer', opacity: currentUser?.role === 'Admin' ? 0.6 : 1 }} 
+                        style={{ width: '100%', justifyContent: 'center', gap: '8px' }} 
                         onClick={handleRefresh} 
-                        disabled={refreshing || currentUser?.role === 'Admin'}
+                        disabled={refreshing}
                       >
                         <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
-                        <span>{refreshing ? 'Syncing...' : currentUser?.role === 'Admin' ? 'Sync restricted for Admin' : 'Sync Tenders Now'}</span>
+                        <span>{refreshing ? 'Syncing...' : 'Sync Tenders Now'}</span>
                       </button>
                     </div>
                   </section>
