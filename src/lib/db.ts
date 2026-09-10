@@ -294,7 +294,9 @@ export interface Tender {
   verification_status?: 'None' | 'Pending' | 'Approved' | 'Rejected';
   submission_status?: 'None' | 'Pending' | 'Approved';
   outcome_status?: 'None' | 'Pending' | 'Won' | 'Lost';
-  spec_verification_status?: 'None' | 'Pending' | 'Approved' | 'Rejected';
+  spec_verification_status?: 'None' | 'Pending' | 'Approved' | 'Rejected' | 'Generated';
+  has_tech_spec?: boolean;
+  tech_spec_file?: string | null;
 }
 
 export interface ProcessedEmail {

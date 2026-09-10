@@ -754,18 +754,15 @@ h1, h2, h3, h4, h5, h6 {
 /* Slider / Side Drawer Detail Panel */
 .drawer-backdrop {
   position: fixed;
-  top: 0;
-  left: 0;
+  inset: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(4px);
-  z-index: 1000;
-  display: flex;
-  justify-content: flex-end;
+  background-color: var(--bg-app);
+  z-index: 99999;
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--transition-normal);
+  transition: opacity var(--transition-fast);
+  display: block;
 }
 
 .drawer-backdrop.open {
@@ -775,17 +772,17 @@ h1, h2, h3, h4, h5, h6 {
 
 .drawer {
   width: 100%;
-  max-width: 600px;
+  max-width: 100% !important;
   height: 100%;
-  background-color: var(--bg-sidebar);
-  border-left: 1px solid var(--border-color);
-  box-shadow: var(--shadow-lg);
-  padding: 40px;
+  background-color: var(--bg-app);
+  border-left: none;
+  box-shadow: none;
+  padding: 32px 40px;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  transform: translateX(100%);
-  transition: transform var(--transition-normal);
+  transform: none !important;
+  transition: none;
 }
 
 .drawer-backdrop.open .drawer {

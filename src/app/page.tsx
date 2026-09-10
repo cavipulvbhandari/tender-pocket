@@ -233,7 +233,9 @@ export default function Dashboard() {
   const [verificationCommentText, setVerificationCommentText] = useState('');
   const [submissionCommentText, setSubmissionCommentText] = useState('');
   const [selectedMisMember, setSelectedMisMember] = useState('');
+  const [selectedMisMemberSpec, setSelectedMisMemberSpec] = useState('');
   const [misTeamMembers, setMisTeamMembers] = useState<string[]>([]);
+  const [specTeamMembers, setSpecTeamMembers] = useState<string[]>([]);
   const [corrigendumFilter, setCorrigendumFilter] = useState(false);
   const [lossReason, setLossReason] = useState('');
   const [workingPath, setWorkingPath] = useState('');
@@ -615,15 +617,18 @@ export default function Dashboard() {
 
   const fetchMisTeam = async () => {
     try {
-      const response = await fetchWithAuth('/api/auth/mis-team');
+      const response = await fetchWithAuth('/api/auth/users');
       if (response.ok) {
         const data = await response.json();
-        if (data.success) {
-          setMisTeamMembers(data.misTeam || []);
+        if (data.success && Array.isArray(data.users)) {
+          const misMembers = data.users.filter((u: any) => u.role === 'MIS Team').map((u: any) => u.username);
+          setMisTeamMembers(misMembers);
+          const specMembers = data.users.filter((u: any) => u.role === 'Specification Team' || u.role === 'Clearance Team').map((u: any) => u.username);
+          setSpecTeamMembers(specMembers);
         }
       }
     } catch (e) {
-      console.error('Failed to fetch MIS Team members list:', e);
+      console.error('Failed to fetch team members list:', e);
     }
   };
 
@@ -1086,6 +1091,33 @@ export default function Dashboard() {
     }
   };
 
+  const handleTechSpecUpload = async (fileToUpload: File) => {
+    if (!selectedTender || !fileToUpload) return;
+    try {
+      const formData = new FormData();
+      formData.append('file', fileToUpload);
+
+      const response = await fetchWithAuth(`/api/tenders/${selectedTender.id}/upload-tech-spec`, {
+        method: 'POST',
+        body: formData
+      });
+      const data = await response.json();
+      if (data.success) {
+        showToast('Technical Specification document uploaded successfully!', 'success');
+        updateTenderField({
+          has_tech_spec: true,
+          tech_spec_file: data.filename || fileToUpload.name,
+          spec_verification_status: 'Pending'
+        });
+      } else {
+        showToast(data.error || 'Failed to upload technical specification.', 'error');
+      }
+    } catch (e) {
+      console.error(e);
+      showToast('Error uploading technical specification.', 'error');
+    }
+  };
+
   const closeTenderDetails = () => {
     setIsDrawerOpen(false);
     setSelectedTender(null);
@@ -1094,27 +1126,11 @@ export default function Dashboard() {
     }
   };
 
-  // Open Dedicated Full-Page Tender Detail View
+  // Open Dedicated Full-Page Tender Detail View via Full HTTP Navigation Redirection
   const openTenderDetails = (tender: Tender) => {
-    setSelectedTender(tender);
-    setIsDrawerOpen(true);
-    if (typeof window !== 'undefined' && window.location.pathname !== `/tenders/${tender.id}`) {
-      window.history.pushState({ tenderId: tender.id }, '', `/tenders/${tender.id}`);
+    if (typeof window !== 'undefined') {
+      window.location.href = `/tenders/${tender.id}`;
     }
-    setTenderNotes(tender.notes || '');
-    setWorkingPath(tender.working_path || '');
-    setEmdPaymentMode(tender.emd_payment_mode || '');
-    setEmdPaymentRef(tender.emd_payment_ref || '');
-    setEmdAmountActual(tender.emd_amount_actual ?? '');
-    setEmdPaymentDate(tender.emd_payment_date || '');
-    setLossReason(tender.loss_reason || '');
-    setBidQty(tender.bid_qty ?? '');
-    setQuotedQty(tender.quoted_qty ?? '');
-    setMisExecutive(tender.mis_executive || '');
-    setSelectedMisMember(tender.assigned_mis_member || '');
-
-    fetchHistoryAndSummaries(tender.id);
-    fetchComments(tender.id);
   };
 
   // Handle Dashboard Metric Card Click
@@ -3525,7 +3541,8 @@ export default function Dashboard() {
                       >
                         <option value="MIS Team">MIS Team</option>
                         <option value="Tender Executive">Tender Executive</option>
-                        <option value="Specification Team">Specification Team</option>
+                        <option value="Clearance Team">Clearance Team</option>
+                        <option value="TPC Team">TPC Team</option>
                       </select>
                     </div>
 
@@ -5052,18 +5069,20 @@ export default function Dashboard() {
                   }}></div>
 
                   {[
-                    { name: 'Docs Prep', label: '1' },
-                    { name: 'EMD Payment', label: '2' },
-                    { name: 'Verification', label: '3' },
-                    { name: 'Submission', label: '4' },
-                    { name: 'Outcome', label: '5' }
+                    { name: 'Tech Spec Review', label: '1' },
+                    { name: 'Docs Prep', label: '2' },
+                    { name: 'EMD Payment', label: '3' },
+                    { name: 'Verification', label: '4' },
+                    { name: 'Submission', label: '5' },
+                    { name: 'Outcome', label: '6' }
                   ].map((step, idx) => {
                     const isActive = (() => {
                       if (idx === 0) return true;
-                      if (idx === 1) return areDocsGenerated;
-                      if (idx === 2) return selectedTender.payment_status === 'Approved' || selectedTender.verification_status === 'Approved' || isOutcomeState;
-                      if (idx === 3) return selectedTender.verification_status === 'Approved' || isOutcomeState;
-                      if (idx === 4) return isOutcomeState;
+                      if (idx === 1) return selectedTender.spec_verification_status === 'Approved';
+                      if (idx === 2) return areDocsGenerated;
+                      if (idx === 3) return selectedTender.payment_status === 'Approved' || selectedTender.verification_status === 'Approved' || isOutcomeState;
+                      if (idx === 4) return selectedTender.verification_status === 'Approved' || isOutcomeState;
+                      if (idx === 5) return isOutcomeState;
                       return false;
                     })();
                     return (
@@ -5093,42 +5112,215 @@ export default function Dashboard() {
 
                 {/* Workflow Cards */}
                 
-                {/* 1. Preparation Card */}
-                <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                {/* 0. Technical Specification Review Card */}
+                <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                    <h4 style={{ margin: 0, fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>1. Preparation & Bid Documents</h4>
-                    <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px', backgroundColor: areDocsGenerated ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)', color: areDocsGenerated ? '#10b981' : '#f59e0b', fontWeight: '600' }}>
-                      {areDocsGenerated ? 'Completed' : 'Pending'}
+                    <h4 style={{ margin: 0, fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>0. Technical Specification Review</h4>
+                    <span style={{ 
+                      fontSize: '11px', 
+                      padding: '2px 8px', 
+                      borderRadius: '12px', 
+                      backgroundColor: selectedTender.spec_verification_status === 'Approved' ? 'rgba(16, 185, 129, 0.1)' : selectedTender.spec_verification_status === 'Pending' ? 'rgba(245, 158, 11, 0.1)' : selectedTender.spec_verification_status === 'Rejected' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(255, 255, 255, 0.05)', 
+                      color: selectedTender.spec_verification_status === 'Approved' ? '#10b981' : selectedTender.spec_verification_status === 'Pending' ? '#f59e0b' : selectedTender.spec_verification_status === 'Rejected' ? '#ef4444' : 'var(--text-muted)', 
+                      fontWeight: '600' 
+                    }}>
+                      {selectedTender.spec_verification_status || 'Not Started'}
                     </span>
                   </div>
-                  {!areDocsGenerated ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0 }}>
-                        No bid documents have been generated yet. Use the document builder to start.
-                      </p>
-                      {(currentUser?.role === 'MIS Executive' || currentUser?.role === 'Tender Executive') && (
-                        <button 
-                          className="btn btn-primary" 
-                          style={{ width: '100%', justifyContent: 'center', marginTop: '6px' }}
-                          onClick={openBidDocForm}
-                        >
-                          Generate Bid Documents
-                        </button>
-                      )}
+                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '10px', lineHeight: '1.4' }}>
+                    Review technical parameters and product specifications. Clearance Team verification is required before bid generation.
+                  </p>
+                  {selectedTender.assigned_mis_member_spec && (
+                    <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                      Target Clearance Representative: <strong style={{ color: 'var(--text-primary)' }}>{selectedTender.assigned_mis_member_spec}</strong>
                     </div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0 }}>
-                        Bid document package successfully compiled.
-                      </p>
-                      {selectedTender.working_path && (
-                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                          📁 Working folder: <code>{selectedTender.working_path}</code>
-                        </span>
+                  )}
+
+                  {/* Executive Controls: 2-Phase Sequence (1. Generate/Upload -> 2. Send to Clearance Team) */}
+                  {(currentUser?.role === 'MIS Executive' || currentUser?.role === 'Tender Executive') && selectedTender.spec_verification_status !== 'Approved' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-color)' }}>
+                      {(!selectedTender.has_tech_spec && selectedTender.spec_verification_status !== 'Pending' && selectedTender.spec_verification_status !== 'Generated') ? (
+                        /* PHASE 1: UPLOAD DOCUMENT TO GENERATE TECHNICAL SPECIFICATION */
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: 'rgba(99, 102, 241, 0.05)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+                          <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--primary)', textTransform: 'uppercase' }}>
+                            Step 1: Upload Document to Generate Technical Specification
+                          </span>
+                          <p style={{ fontSize: '11.5px', color: 'var(--text-secondary)', margin: 0 }}>
+                            Upload the tender document or specification file to process and generate the technical specification parameters.
+                          </p>
+
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <label style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>Select Specification Document (PDF / DOCX / TXT)</label>
+                            <input 
+                              type="file" 
+                              id="tech-spec-file-input-main"
+                              accept=".pdf,.docx,.doc,.txt"
+                              style={{ fontSize: '12px', color: 'var(--text-primary)', padding: '6px', background: 'var(--bg-app)', borderRadius: '6px', border: '1px solid var(--border-color)' }}
+                            />
+                          </div>
+
+                          <button 
+                            className="btn btn-primary"
+                            style={{ width: '100%', justifyContent: 'center', fontSize: '12.5px', marginTop: '4px' }}
+                            onClick={async () => {
+                              const inputEl = document.getElementById('tech-spec-file-input-main') as HTMLInputElement;
+                              const fileToUpload = inputEl?.files?.[0];
+                              if (!fileToUpload) {
+                                showToast('Please select a specification document to upload first.', 'error');
+                                return;
+                              }
+                              try {
+                                showToast('Uploading document and generating technical specification...', 'success');
+                                const formData = new FormData();
+                                formData.append('file', fileToUpload);
+                                const uploadRes = await fetchWithAuth(`/api/tenders/${selectedTender.id}/upload-tech-spec`, {
+                                  method: 'POST',
+                                  body: formData
+                                });
+                                const uploadData = await uploadRes.json();
+                                if (uploadData.success) {
+                                  await fetchWithAuth(`/api/tenders/${selectedTender.id}/generate-bid-docs`, { method: 'POST' });
+                                  showToast('Technical Specification document generated successfully!', 'success');
+                                  updateTenderField({
+                                    has_tech_spec: true,
+                                    tech_spec_file: uploadData.filename || fileToUpload.name,
+                                    spec_verification_status: 'Generated'
+                                  });
+                                } else {
+                                  showToast(uploadData.error || 'Failed to upload document.', 'error');
+                                }
+                              } catch (e) {
+                                showToast('Error uploading and generating technical specification.', 'error');
+                              }
+                            }}
+                          >
+                            ⚙️ Upload & Generate Technical Specification
+                          </button>
+                        </div>
+                      ) : (
+                        /* PHASE 2: SEND TO CLEARANCE TEAM */
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: 'rgba(16, 185, 129, 0.05)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#10b981', fontSize: '12px', fontWeight: '700' }}>
+                            <span>✅ Technical Specification document has been created and attached.</span>
+                          </div>
+
+                          {selectedTender.spec_verification_status !== 'Pending' ? (
+                            <>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <label style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>Assign Clearance Team Representative</label>
+                                <select 
+                                  value={selectedMisMemberSpec} 
+                                  onChange={(e) => {
+                                    setSelectedMisMemberSpec(e.target.value);
+                                    updateTenderField({ assigned_mis_member_spec: e.target.value });
+                                  }}
+                                  style={{ padding: '8px 12px', borderRadius: '6px', background: 'var(--bg-app)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '12.5px', outline: 'none' }}
+                                >
+                                  <option value="">-- Select Clearance Representative --</option>
+                                  {specTeamMembers.map(m => (
+                                    <option key={m} value={m}>{m}</option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              <button 
+                                className="btn btn-primary" 
+                                style={{ width: '100%', justifyContent: 'center', marginTop: '4px' }}
+                                onClick={async () => {
+                                  if (!selectedMisMemberSpec) {
+                                    showToast('Please select a Target Clearance Representative first.', 'error');
+                                    return;
+                                  }
+                                  try {
+                                    await fetchWithAuth(`/api/tenders/${selectedTender.id}/clearance-request`, { method: 'POST' });
+                                    updateTenderField({ spec_verification_status: 'Pending', assigned_mis_member_spec: selectedMisMemberSpec });
+                                    showToast('Submitted to Clearance Team for Approval!', 'success');
+                                  } catch (e) {
+                                    updateTenderField({ spec_verification_status: 'Pending', assigned_mis_member_spec: selectedMisMemberSpec });
+                                  }
+                                }}
+                              >
+                                🚀 Send Technical Specification to Clearance Team
+                              </button>
+                            </>
+                          ) : (
+                            <div style={{ fontSize: '12px', color: 'var(--accent-yellow)', fontWeight: '600' }}>
+                              ⏳ Submitted to Clearance Team for Approval (Pending Clearance Review).
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
                   )}
+
+                  {/* Clearance Team Action Controls */}
+                  {(currentUser?.role === 'Clearance Team' || currentUser?.role === 'Specification Team' || (selectedTender.assigned_mis_member_spec && currentUser?.username === selectedTender.assigned_mis_member_spec)) && selectedTender.spec_verification_status === 'Pending' && (
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '12px', background: 'rgba(147, 51, 234, 0.05)', padding: '10px', borderRadius: '6px', border: '1px solid rgba(147, 51, 234, 0.2)' }}>
+                      <button 
+                        className="btn btn-primary" 
+                        style={{ flex: 1, background: 'var(--accent-green)', borderColor: 'var(--accent-green)', padding: '6px 12px', fontSize: '11px', justifyContent: 'center' }}
+                        onClick={() => updateTenderField({ spec_verification_status: 'Approved' })}
+                      >
+                        Approve Tech Spec
+                      </button>
+                      <button 
+                        className="btn btn-secondary" 
+                        style={{ flex: 1, color: 'var(--accent-red)', padding: '6px 12px', fontSize: '11px', justifyContent: 'center' }}
+                        onClick={() => updateTenderField({ spec_verification_status: 'Rejected' })}
+                      >
+                        Reject Tech Spec
+                      </button>
+                    </div>
+                  )}
                 </div>
+                
+                {/* 1. Preparation Card - UNLOCKED ONLY AFTER TECH SPEC IS APPROVED */}
+                {selectedTender.spec_verification_status === 'Approved' ? (
+                  <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                      <h4 style={{ margin: 0, fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>1. Preparation & Bid Documents</h4>
+                      <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px', backgroundColor: areDocsGenerated ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)', color: areDocsGenerated ? '#10b981' : '#f59e0b', fontWeight: '600' }}>
+                        {areDocsGenerated ? 'Completed' : 'Pending'}
+                      </span>
+                    </div>
+                    {!areDocsGenerated ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0 }}>
+                          No bid documents have been generated yet. Use the document builder to start.
+                        </p>
+                        {(currentUser?.role === 'MIS Executive' || currentUser?.role === 'Tender Executive') && (
+                          <button 
+                            className="btn btn-primary" 
+                            style={{ width: '100%', justifyContent: 'center', marginTop: '6px' }}
+                            onClick={openBidDocForm}
+                          >
+                            Generate Bid Documents
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0 }}>
+                          Bid document package successfully compiled.
+                        </p>
+                        {selectedTender.working_path && (
+                          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                            📁 Working folder: <code>{selectedTender.working_path}</code>
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ background: 'rgba(255, 255, 255, 0.01)', padding: '14px 16px', borderRadius: '8px', border: '1px dashed var(--border-color)', marginBottom: '16px', opacity: 0.7 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-muted)' }}>1. Preparation & Bid Documents</span>
+                      <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px', backgroundColor: 'rgba(255, 255, 255, 0.05)', color: 'var(--text-muted)' }}>
+                        Locked (Pending Tech Spec Clearance)
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 {/* 2. EMD Payment Card */}
                 {areDocsGenerated && (selectedTender.status !== 'New') && (

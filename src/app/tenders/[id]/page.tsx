@@ -1105,39 +1105,121 @@ export default function TenderDetailPage() {
                       </div>
                     ) : null}
 
-                    {/* Executive Controls: Select Spec Representative & Submit for Review */}
-                    {currentUser?.role === 'MIS Executive' && selectedTender.spec_verification_status !== 'Approved' && selectedTender.spec_verification_status !== 'Pending' && (
+                    {/* Executive Controls: 2-Phase Sequence (1. Generate/Upload -> 2. Send to Clearance Team) */}
+                    {(currentUser?.role === 'MIS Executive' || currentUser?.role === 'Tender Executive') && selectedTender.spec_verification_status !== 'Approved' && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '12px' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                          <label style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '600' }}>TARGET SPECIFICATION TEAM REPRESENTATIVE</label>
-                          <select 
-                            value={selectedMisMemberSpec} 
-                            onChange={(e) => {
-                              setSelectedMisMemberSpec(e.target.value);
-                              updateTenderField({ assigned_mis_member_spec: e.target.value });
-                            }}
-                            style={{ padding: '8px 12px', borderRadius: '6px', background: 'var(--bg-app)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '13px', outline: 'none' }}
-                          >
-                            <option value="">-- Select Specification Member --</option>
-                            {specTeamMembers.map(m => (
-                              <option key={m} value={m}>{m}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <button 
-                          className="btn btn-primary" 
-                          style={{ width: '100%', justifyContent: 'center' }}
-                          onClick={() => {
-                            if (!selectedMisMemberSpec) {
-                              showToast('Please select a Target Specification Team Representative first.', 'error');
-                              alert('Please select a Target Specification Team Representative first.');
-                              return;
-                            }
-                            updateTenderField({ spec_verification_status: 'Pending' });
-                          }}
-                        >
-                          Submit for Technical Spec Review
-                        </button>
+                        {(!selectedTender.has_tech_spec && selectedTender.spec_verification_status !== 'Pending' && selectedTender.spec_verification_status !== 'Generated') ? (
+                          /* PHASE 1: UPLOAD DOCUMENT TO GENERATE TECHNICAL SPECIFICATION */
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: 'rgba(99, 102, 241, 0.05)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+                            <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--primary)', textTransform: 'uppercase' }}>
+                              Step 1: Upload Document to Generate Technical Specification
+                            </span>
+                            <p style={{ fontSize: '11.5px', color: 'var(--text-secondary)', margin: 0 }}>
+                              Upload the tender document or specification file to process and generate the technical specification parameters.
+                            </p>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              <label style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>Select Specification Document (PDF / DOCX / TXT)</label>
+                              <input 
+                                type="file" 
+                                id="tech-spec-file-input-detail"
+                                accept=".pdf,.docx,.doc,.txt"
+                                style={{ fontSize: '12px', color: 'var(--text-primary)', padding: '6px', background: 'var(--bg-app)', borderRadius: '6px', border: '1px solid var(--border-color)' }}
+                              />
+                            </div>
+
+                            <button 
+                              className="btn btn-primary"
+                              style={{ width: '100%', justifyContent: 'center', fontSize: '12.5px', marginTop: '4px' }}
+                              onClick={async () => {
+                                const inputEl = document.getElementById('tech-spec-file-input-detail') as HTMLInputElement;
+                                const fileToUpload = inputEl?.files?.[0];
+                                if (!fileToUpload) {
+                                  showToast('Please select a specification document to upload first.', 'error');
+                                  return;
+                                }
+                                try {
+                                  showToast('Uploading document and generating technical specification...', 'success');
+                                  const formData = new FormData();
+                                  formData.append('file', fileToUpload);
+                                  const uploadRes = await fetchWithAuth(`/api/tenders/${selectedTender.id}/upload-tech-spec`, {
+                                    method: 'POST',
+                                    body: formData
+                                  });
+                                  const uploadData = await uploadRes.json();
+                                  if (uploadData.success) {
+                                    await fetchWithAuth(`/api/tenders/${selectedTender.id}/generate-bid-docs`, { method: 'POST' });
+                                    showToast('Technical Specification document generated successfully!', 'success');
+                                    updateTenderField({
+                                      has_tech_spec: true,
+                                      tech_spec_file: uploadData.filename || fileToUpload.name,
+                                      spec_verification_status: 'Generated'
+                                    });
+                                  } else {
+                                    showToast(uploadData.error || 'Failed to upload document.', 'error');
+                                  }
+                                } catch (e) {
+                                  showToast('Error uploading and generating technical specification.', 'error');
+                                }
+                              }}
+                            >
+                              ⚙️ Upload & Generate Technical Specification
+                            </button>
+                          </div>
+                        ) : (
+                          /* PHASE 2: SEND TO CLEARANCE TEAM */
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: 'rgba(16, 185, 129, 0.05)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#10b981', fontSize: '12px', fontWeight: '700' }}>
+                              <span>✅ Technical Specification document has been created and attached.</span>
+                            </div>
+
+                            {selectedTender.spec_verification_status !== 'Pending' ? (
+                              <>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                  <label style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>Assign Clearance Representative</label>
+                                  <select 
+                                    value={selectedMisMemberSpec} 
+                                    onChange={(e) => {
+                                      setSelectedMisMemberSpec(e.target.value);
+                                      updateTenderField({ assigned_mis_member_spec: e.target.value });
+                                    }}
+                                    style={{ padding: '8px 12px', borderRadius: '6px', background: 'var(--bg-app)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '13px', outline: 'none' }}
+                                  >
+                                    <option value="">-- Select Clearance Representative --</option>
+                                    {specTeamMembers.map(m => (
+                                      <option key={m} value={m}>{m}</option>
+                                    ))}
+                                  </select>
+                                </div>
+
+                                <button 
+                                  className="btn btn-primary" 
+                                  style={{ width: '100%', justifyContent: 'center' }}
+                                  onClick={async () => {
+                                    if (!selectedMisMemberSpec) {
+                                      showToast('Please select a Target Clearance Representative first.', 'error');
+                                      alert('Please select a Target Clearance Representative first.');
+                                      return;
+                                    }
+                                    try {
+                                      await fetchWithAuth(`/api/tenders/${selectedTender.id}/clearance-request`, { method: 'POST' });
+                                      updateTenderField({ spec_verification_status: 'Pending', assigned_mis_member_spec: selectedMisMemberSpec });
+                                      showToast('Submitted to Clearance Team for Approval!', 'success');
+                                    } catch (e) {
+                                      updateTenderField({ spec_verification_status: 'Pending', assigned_mis_member_spec: selectedMisMemberSpec });
+                                    }
+                                  }}
+                                >
+                                  🚀 Send Technical Specification to Clearance Team
+                                </button>
+                              </>
+                            ) : (
+                              <div style={{ fontSize: '12px', color: 'var(--accent-yellow)', fontWeight: '600' }}>
+                                ⏳ Submitted to Clearance Team for Approval (Pending Clearance Review).
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -1274,7 +1356,7 @@ export default function TenderDetailPage() {
                   <label style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                     Specification Team Representative
                   </label>
-                  {currentUser?.role === 'MIS Executive' || currentUser?.role === 'MIS Team' || currentUser?.role === 'Admin' ? (
+                  {currentUser?.role === 'MIS Executive' || currentUser?.role === 'MIS Team' ? (
                     <select 
                       value={selectedMisMemberSpec} 
                       onChange={(e) => {
